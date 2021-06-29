@@ -14,7 +14,7 @@ include versioning.mk
 
 SHELL_SCRIPTS = $(wildcard _scripts/*.sh) \
 				rootfs/usr/local/bin/* \
-				rootfs/pack/*
+				rootfs/imagebuilder/*
 
 # The following variables describe the containerized development environment
 # and other build options
@@ -57,13 +57,10 @@ kube-service: kube-secrets
 kube-clean:
 	- kubectl delete rc drycc-${SHORT_NAME}-rc
 
-test: test-style test-unit test-functional
+test: test-style test-functional
 
 test-style:
 	${DEV_ENV_CMD} shellcheck $(SHELL_SCRIPTS)
-
-test-unit:
-	docker run --entrypoint /usr/bin/env ${IMAGE} python3 -m unittest procfile
 
 test-functional:
 	@echo "Implement functional tests in _tests directory"

@@ -13,10 +13,13 @@ trap clean_before_exit EXIT
 
 function waiting_podman {
     echo "---> Waiting podman system service"
-    for _ in {0..3};do
+    for i in {0..3}; do
         pid=$(pgrep podman)
         if [ ! -n "$pid" ]; then
             sleep 3
+        elif [ ! -n "$pid" ] && [[ $i == 3 ]]; then
+            echo "---> Podman system service failed to start"
+            exit 1
         else
             sleep 1
             break
@@ -26,10 +29,13 @@ function waiting_podman {
 
 function waiting_caddy {
     echo "---> Waiting caddy reverse-proxy"
-    for _ in {0..3};do
+    for i in {0..4}; do
         pid=$(pgrep caddy)
         if [ ! -n "$pid" ]; then
             sleep 3
+        elif [ ! -n "$pid" ] && [[ $i == 3 ]]; then
+            echo "---> Caddy failed to start"
+            exit 1
         else
             sleep 1
             break

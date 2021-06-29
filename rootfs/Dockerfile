@@ -10,4 +10,4 @@ RUN /imagebuilder/install
 WORKDIR /app
 ENV HOME /app
 
-#ENTRYPOINT ["/imagebuilder/build"]
+ENTRYPOINT ["/imagebuilder/build"]
