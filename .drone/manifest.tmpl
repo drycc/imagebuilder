@@ -1,5 +1,5 @@
 
-image: docker.io/drycc/buildparker:{{#if build.tag}}{{trimPrefix "v" build.tag}}{{else}}canary{{/if}}
+image: docker.io/drycc/imagebuilder:{{#if build.tag}}{{trimPrefix "v" build.tag}}{{else}}canary{{/if}}
 {{#if build.tags}}
 tags:
 {{#each build.tags}}
@@ -8,12 +8,12 @@ tags:
 {{/if}}
 manifests:
   -
-    image: docker.io/drycc/buildparker:{{#if build.tag}}{{build.tag}}-{{else}}latest-{{/if}}linux-amd64
+    image: docker.io/drycc/imagebuilder:{{#if build.tag}}{{build.tag}}-{{else}}latest-{{/if}}linux-amd64
     platform:
       architecture: amd64
       os: linux
   -
-    image: docker.io/drycc/buildparker:{{#if build.tag}}{{build.tag}}-{{else}}latest-{{/if}}linux-arm64
+    image: docker.io/drycc/imagebuilder:{{#if build.tag}}{{build.tag}}-{{else}}latest-{{/if}}linux-arm64
     platform:
       architecture: arm64
       os: linux

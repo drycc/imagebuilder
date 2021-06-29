@@ -9,11 +9,9 @@ We welcome your input! If you have feedback, please [submit an issue][issues]. I
 
 # About
 
-The imagebuilder downloads a git archive ([gzip](http://www.gzip.org/)ped [tar](https://www.gnu.org/software/tar/)ball) from a specified [S3 API compatible server][s3-api], compiles a [slug](https://devcenter.heroku.com/articles/slug-compiler) and uploads it to a specified S3 API compatible server.
+The V3 version of imagebuilder unifies the building model, uses the latest CNCF [buildpack](https://github.com/buildpacks) building program, and also supports the dockerfile format.
 
-This component is usually launched by the [Drycc Builder](https://github.com/drycc/builder) and used inside the Drycc [PaaS](https://en.wikipedia.org/wiki/Platform_as_a_service), but it is flexible enough to be used as a pod inside any Kubernetes cluster.
-
-Please see https://github.com/drycc/builder/blob/master/README.md for a more detailed description of how `imagebuilder` interacts with `builder`.
+You can use `DRYCC_STACK` specifies the construction mode. Currently, you can choose two construction formats: `container` and `buildpack`.
 
 # Development
 
