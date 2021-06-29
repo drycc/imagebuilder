@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: imagebuilder-config
+  labels:
+    heritage: drycc
+data:
+  images.json: |
+    [
+        {
+            "name": "imagebuilder",
+            "image": "{{.Values.image_registry}}/{{.Values.org}}/imagebuilder:{{.Values.image_tag}}"
+        }
+    ]
+  registries.conf: |
+    unqualified-search-registries = ["docker.io", "quay.io"]
+    [[registry]]
+    prefix = "docker.io"
+    insecure = true
+    [[registry]]
+    prefix = "localhost:5000"
+    insecure = true
+  image_pull_policy: {{ .Values.image_pull_policy }}

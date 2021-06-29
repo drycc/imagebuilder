@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -eo pipefail
+shopt -s expand_aliases
+alias podman="podman --storage-driver=vfs --cgroup-manager=cgroupfs --events-backend=file"
+
+function clean_before_exit {
+    # delay before exiting, so stdout/stderr flushes through the logging system
+    pkill -15 caddy
+    pkill -15 podman
+    sleep 3
+}
+trap clean_before_exit EXIT
+
+function waiting_podman {
+    echo "---> Waiting podman system service"
+    for _ in {0..3};do
+        pid=$(pgrep podman)
+        if [ ! -n "$pid" ]; then
+            sleep 3
+        else
+            sleep 1
+            break
+        fi
+    done
+}
+
+function waiting_caddy {
+    echo "---> Waiting caddy reverse-proxy"
+    for _ in {0..3};do
+        pid=$(pgrep caddy)
+        if [ ! -n "$pid" ]; then
+            sleep 3
+        else
+            sleep 1
+            break
+        fi
+    done
+}
+
+# Start podman service
+export DOCKER_HOST="unix:///var/run/podman.sock"
+
+log_level="error"
+if [[ "${DRYCC_DEBUG}" ]]; then
+    log_level="debug"
+    unset DRYCC_DEBUG
+fi
+
+podman system service \
+    --log-level "${log_level}" \
+    --time 0 "${DOCKER_HOST}" &
+
+waiting_podman
+
+if [[ -n "${TAR_PATH}" ]]; then
+    get_object
+    tar -xzf /tmp/app.tgz -C /app/
+    unset TAR_PATH
+fi
+
+pack_builder="docker.io/drycc/buildpacks:20"
+if [[ -f .pack-builder ]]; then
+    pack_builder=$(< .pack-builder tr -d '[:space:]')
+fi
+
+# Get registry and login
+if [[ "${DRYCC_REGISTRY_LOCATION}" == "off-cluster" ]] ; then
+    registry="${DRYCC_REGISTRY_HOSTNAME}/${DRYCC_REGISTRY_ORGANIZATION}"
+    podman login \
+        --username "${DRYCC_REGISTRY_USERNAME}" \
+        --password "${DRYCC_REGISTRY_PASSWORD}" \
+        "${DRYCC_REGISTRY_HOSTNAME}" --tls-verify=false
+else
+    # Start registry proxy
+    registry="${DRYCC_REGISTRY_PROXY_HOST}:${DRYCC_REGISTRY_PROXY_PORT}"
+    caddy reverse-proxy \
+        --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
+        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" &
+    waiting_caddy
+    podman login \
+        --username drycc \
+        --password drycc \
+        --tls-verify=false \
+        "${registry}"
+fi
+
+# Get image name and image tag
+image_name=$(echo "${IMG_NAME}" | awk -F ':' '{print $1}')
+image_tag=$(echo "${IMG_NAME}" | awk -F ':' '{print $2}')
+image_repo="${registry}/${image_name}:${image_tag}"
+image_cache_repo="${registry}/${image_name}:latest"
+
+# Pull latest image as cache
+{
+    echo "---> Reusing cache" 
+    podman pull "${image_cache_repo}" --tls-verify=false >/dev/null 2>&1
+} || {
+    echo "---> Cache not found" 
+}
+
+# Building
+if [[ "${DRYCC_STACK}" == "container" ]] ; then
+    echo "---> Building container"
+    podman build -t "${image_cache_repo}" .
+else
+    echo "---> Building pack"
+    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}"
+fi
+
+# Publish image
+echo "---> Publishing image"
+podman tag "${image_cache_repo}" "${image_repo}"
+podman push "${image_cache_repo}" --tls-verify=false
+podman push "${image_repo}" --tls-verify=false
