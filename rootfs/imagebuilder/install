@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-git clone --dept 1 https://github.com/buildpacks/pack -b v0.19.0 /tmp/pack
-cd /tmp/pack
-make
-cp /tmp/pack/out/pack /usr/local/bin
-chmod +x /usr/local/bin/pack
-rm -rf /tmp/pack
-
 CADDY_DOWNLOAD_URL="https://github.com/caddyserver/caddy/releases/download/v2.4.3/caddy_2.4.3_linux_$(dpkg --print-architecture).tar.gz"
 (curl -sSL "${CADDY_DOWNLOAD_URL}" | tar -C /usr/local/bin/ --no-same-owner -xzv caddy)
 
