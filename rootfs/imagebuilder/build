@@ -12,16 +12,19 @@ function clean_before_exit {
 trap clean_before_exit EXIT
 
 function waiting_process {
+    # shellcheck disable=SC1117
     echo -e "\033[32m---> Waiting $1 running.\033[0m"
     for i in {0..4}; do
-        pid=$(pgrep $1)
+        pid=$(pgrep "$1")
         if [ ! -n "$pid" ] && [[ $i == 3 ]]; then
+      # shellcheck disable=SC1117
 	    echo -e "\033[31m---> Process $1 failed.\033[0m"
             exit 1
         elif [ ! -n "$pid" ]; then
             sleep 3
         else
             sleep 1
+      # shellcheck disable=SC1117
 	    echo -e "\033[32m---> Process $1 started.\033[0m"
             break
         fi
@@ -29,7 +32,7 @@ function waiting_process {
 }
 
 # Start podman service
-export DOCKER_HOST="unix:///var/run/podman.sock"
+export DOCKER_HOST=tcp://127.0.0.1:1234
 
 log_level="error"
 if [[ "${DRYCC_DEBUG}" ]]; then
@@ -39,13 +42,12 @@ fi
 
 podman system service \
     --log-level "${log_level}" \
-    --time 0 "${DOCKER_HOST}" &
+    --time 0 tcp:0.0.0.0:1234 &
 
 waiting_process podman
-
 if [[ -n "${TAR_PATH}" ]]; then
     get_object
-    tar -xzf /tmp/app.tgz -C /app/
+    tar -xzf /tmp/app.tgz -C /app/ && \
     unset TAR_PATH
 fi
 
@@ -60,19 +62,22 @@ if [[ "${DRYCC_REGISTRY_LOCATION}" == "off-cluster" ]] ; then
     podman login \
         --username "${DRYCC_REGISTRY_USERNAME}" \
         --password "${DRYCC_REGISTRY_PASSWORD}" \
-        "${DRYCC_REGISTRY_HOSTNAME}" --tls-verify=false
+        "${DRYCC_REGISTRY_HOSTNAME}" --tls-verify=false \
+        > /dev/null
 else
     # Start registry proxy
     registry="${DRYCC_REGISTRY_PROXY_HOST}:${DRYCC_REGISTRY_PROXY_PORT}"
     caddy reverse-proxy \
         --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
-        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" &
+        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" \
+        >"$([ "${log_level}" == "debug" ] && echo "/dev/stdout" || echo "/dev/null")" 2>&1 &
     waiting_process caddy
     podman login \
         --username drycc \
         --password drycc \
         --tls-verify=false \
-        "${registry}"
+        "${registry}" \
+        > /dev/null
 fi
 
 # Get image name and image tag
@@ -83,19 +88,19 @@ image_cache_repo="${registry}/${image_name}:latest"
 
 # Pull latest image as cache
 {
-    echo "---> Reusing cache" 
+    echo "---> Reusing cache"
     podman pull "${image_cache_repo}" --tls-verify=false >/dev/null 2>&1
 } || {
-    echo "---> Cache not found" 
+    echo "---> Cache not found"
 }
-
 # Building
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
-    podman build -t "${image_cache_repo}" .
+    podman build -t "${image_cache_repo}" --network host .
 else
     echo "---> Building pack"
-    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}"
+    echo "use builder ${pack_builder}"
+    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}" --lifecycle-image docker.io/drycc/lifecycle:0.11.3 --trust-builder --network host
 fi
 
 # Publish image
