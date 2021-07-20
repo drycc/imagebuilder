@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 shopt -s expand_aliases
-alias podman="podman --storage-driver=vfs --cgroup-manager=cgroupfs --events-backend=file"
+alias podman="podman --cgroup-manager=cgroupfs --events-backend=file"
 
 function clean_before_exit {
     # delay before exiting, so stdout/stderr flushes through the logging system
@@ -11,33 +11,18 @@ function clean_before_exit {
 }
 trap clean_before_exit EXIT
 
-function waiting_podman {
-    echo "---> Waiting podman system service"
-    for i in {0..3}; do
-        pid=$(pgrep podman)
-        if [ ! -n "$pid" ]; then
-            sleep 3
-        elif [ ! -n "$pid" ] && [[ $i == 3 ]]; then
-            echo "---> Podman system service failed to start"
-            exit 1
-        else
-            sleep 1
-            break
-        fi
-    done
-}
-
-function waiting_caddy {
-    echo "---> Waiting caddy reverse-proxy"
+function waiting_process {
+    echo -e "\033[32m---> Waiting $1 running.\033[0m"
     for i in {0..4}; do
-        pid=$(pgrep caddy)
-        if [ ! -n "$pid" ]; then
-            sleep 3
-        elif [ ! -n "$pid" ] && [[ $i == 3 ]]; then
-            echo "---> Caddy failed to start"
+        pid=$(pgrep $1)
+        if [ ! -n "$pid" ] && [[ $i == 3 ]]; then
+	    echo -e "\033[31m---> Process $1 failed.\033[0m"
             exit 1
+        elif [ ! -n "$pid" ]; then
+            sleep 3
         else
             sleep 1
+	    echo -e "\033[32m---> Process $1 started.\033[0m"
             break
         fi
     done
@@ -56,7 +41,7 @@ podman system service \
     --log-level "${log_level}" \
     --time 0 "${DOCKER_HOST}" &
 
-waiting_podman
+waiting_process podman
 
 if [[ -n "${TAR_PATH}" ]]; then
     get_object
@@ -82,7 +67,7 @@ else
     caddy reverse-proxy \
         --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
         --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" &
-    waiting_caddy
+    waiting_process caddy
     podman login \
         --username drycc \
         --password drycc \
