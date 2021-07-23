@@ -8,7 +8,11 @@ data:
   images.json: |
     [
         {
-            "name": "imagebuilder",
+            "name": "container",
+            "image": "{{.Values.image_registry}}/{{.Values.org}}/imagebuilder:{{.Values.image_tag}}"
+        },
+        {
+            "name": "buildpack",
             "image": "{{.Values.image_registry}}/{{.Values.org}}/imagebuilder:{{.Values.image_tag}}"
         }
     ]
