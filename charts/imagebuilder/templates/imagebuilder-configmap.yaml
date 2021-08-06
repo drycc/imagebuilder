@@ -9,11 +9,11 @@ data:
     [
         {
             "name": "container",
-            "image": "{{.Values.image_registry}}/{{.Values.org}}/imagebuilder:{{.Values.image_tag}}"
+            "image": "{{.Values.image_registry}}/{{.Values.image_org}}/imagebuilder:{{.Values.image_tag}}"
         },
         {
             "name": "buildpack",
-            "image": "{{.Values.image_registry}}/{{.Values.org}}/imagebuilder:{{.Values.image_tag}}"
+            "image": "{{.Values.image_registry}}/{{.Values.image_org}}/imagebuilder:{{.Values.image_tag}}"
         }
     ]
   registries.conf: |
