@@ -91,13 +91,14 @@ image_cache_repo="${registry}/${image_name}:latest"
     echo "---> Cache not found"
 }
 # Building
+export LIFECYCLE_IMAGE=docker.io/buildpacksio/lifecycle:8f801a5
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
     podman build -t "${image_cache_repo}" --network host .
 else
     echo "---> Building pack"
     echo "use builder ${pack_builder}"
-    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}" --lifecycle-image docker.io/drycc/lifecycle:0.11.3 --trust-builder --network host
+    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}" --lifecycle-image "${LIFECYCLE_IMAGE}" --trust-builder --network host
 fi
 
 # Publish image
