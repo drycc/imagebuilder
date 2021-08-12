@@ -29,7 +29,8 @@ function waiting_process {
 }
 
 # Start podman service
-export DOCKER_HOST=tcp://127.0.0.1:1234
+export DOCKER_PORT=1234
+export DOCKER_HOST=tcp://127.0.0.1:${DOCKER_PORT}
 
 log_level="error"
 if [[ "${DRYCC_DEBUG}" ]]; then
@@ -39,7 +40,7 @@ fi
 
 podman system service \
     --log-level "${log_level}" \
-    --time 0 tcp:0.0.0.0:1234 &
+    --time 0 tcp:0.0.0.0:${DOCKER_PORT} &
 
 waiting_process podman
 if [[ -n "${TAR_PATH}" ]]; then
@@ -97,8 +98,13 @@ if [[ "${DRYCC_STACK}" == "container" ]] ; then
     podman build -t "${image_cache_repo}" --network host .
 else
     echo "---> Building pack"
-    echo "use builder ${pack_builder}"
-    pack build "${image_cache_repo}" --builder "${pack_builder}" --docker-host "${DOCKER_HOST}" --lifecycle-image "${LIFECYCLE_IMAGE}" --trust-builder --network host
+    echo "---> Using builder ${pack_builder}"
+    pack build "${image_cache_repo}" \
+        --builder "${pack_builder}" \
+	--docker-host "${DOCKER_HOST}" \
+	--lifecycle-image "${LIFECYCLE_IMAGE}" \
+	--trust-builder \
+	--network host
 fi
 
 # Publish image
