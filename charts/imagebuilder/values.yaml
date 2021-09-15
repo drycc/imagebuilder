@@ -2,3 +2,6 @@ image_org: "drycc"
 image_pull_policy: "Always"
 image_tag: "canary"
 image_registry: "docker.io"
+container_registries: |
+  unqualified-search-registries = ["docker.io"]
+  short-name-mode="permissive"

@@ -17,11 +17,5 @@ data:
         }
     ]
   registries.conf: |
-    unqualified-search-registries = ["docker.io", "quay.io"]
-    [[registry]]
-    prefix = "docker.io"
-    insecure = true
-    [[registry]]
-    prefix = "localhost:5000"
-    insecure = true
+    {{- .Values.container_registries | nindent 4 }}
   image_pull_policy: {{ .Values.image_pull_policy }}

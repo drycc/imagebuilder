@@ -1,12 +1,27 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-CADDY_DOWNLOAD_URL="https://github.com/caddyserver/caddy/releases/download/v2.4.3/caddy_2.4.3_linux_$(dpkg --print-architecture).tar.gz"
+# initArch discovers the architecture for this system.
+init_arch() {
+  ARCH=$(uname -m)
+  case $ARCH in
+    armv5*) ARCH="armv5";;
+    armv6*) ARCH="armv6";;
+    armv7*) ARCH="arm";;
+    aarch64) ARCH="arm64";;
+    x86) ARCH="386";;
+    x86_64) ARCH="amd64";;
+    i686) ARCH="386";;
+    i386) ARCH="386";;
+  esac
+}
+init_arch
+
+CADDY_DOWNLOAD_URL="https://github.com/caddyserver/caddy/releases/download/v2.4.5/caddy_2.4.5_linux_${ARCH}.tar.gz"
 (curl -sSL "${CADDY_DOWNLOAD_URL}" | tar -C /usr/local/bin/ --no-same-owner -xzv caddy)
 
-apt-get autoremove -y --purge
-apt-get clean all
+dnf install -yq procps-ng psmisc
+
+dnf clean all
 rm -rf /root/*
 rm -rf /tmp/*
-rm -rf /var/cache/apt/archives/*.deb
-rm -rf /var/lib/apt/lists/*
