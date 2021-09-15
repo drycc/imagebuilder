@@ -15,10 +15,10 @@ function waiting_process {
     echo -e "\\033[32m---> Waiting $1 running.\\033[0m"
     for i in {0..4}; do
         pid=$(pgrep "$1")
-        if [ ! -n "$pid" ] && [[ $i == 3 ]]; then
+        if [ -z "$pid" ] && [[ $i == 3 ]]; then
 	    echo -e "\\033[31m---> Process $1 failed.\\033[0m"
             exit 1
-        elif [ ! -n "$pid" ]; then
+        elif [ -z "$pid" ]; then
             sleep 3
         else
             sleep 1
@@ -97,7 +97,7 @@ image_cache_repo="${registry}/${image_name}:latest"
     echo "---> Cache not found"
 }
 # Building
-export LIFECYCLE_IMAGE=docker.io/buildpacksio/lifecycle:8f801a5
+export LIFECYCLE_IMAGE=docker.io/buildpacksio/lifecycle:0.12.0-rc.1
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
     podman build -t "${image_cache_repo}" --network host .
