@@ -43,15 +43,12 @@ if [ -f "${registries}" ]; then
     cat "${registries}" > /etc/containers/registries.conf
 fi
 
-podman system service \
-    --log-level "${log_level}" \
-    --time 0 tcp:0.0.0.0:${DOCKER_PORT} &
+podman system service --time 0 tcp:0.0.0.0:${DOCKER_PORT} &
 
 waiting_process podman
 if [[ -n "${TAR_PATH}" ]]; then
     get_object
-    tar -xzf /tmp/app.tgz -C /app/ && \
-    unset TAR_PATH
+    tar -xzf /tmp/app.tgz -C /app/ && unset TAR_PATH
 fi
 
 pack_builder="docker.io/drycc/buildpacks:20"
@@ -65,21 +62,25 @@ if [[ "${DRYCC_REGISTRY_LOCATION}" == "off-cluster" ]] ; then
     podman login \
         --username "${DRYCC_REGISTRY_USERNAME}" \
         --password "${DRYCC_REGISTRY_PASSWORD}" \
-        "${DRYCC_REGISTRY_HOSTNAME}" --tls-verify=false \
-        > /dev/null
+        "${DRYCC_REGISTRY_HOSTNAME}" \
+        --tls-verify=false > /dev/null
 else
     # Start registry proxy
     registry="${DRYCC_REGISTRY_PROXY_HOST}:${DRYCC_REGISTRY_PROXY_PORT}"
+    if [[ ${log_level} == "debug" ]] ; then
+        output="/dev/stdout"
+    else
+        output="/dev/null"
+    fi
     caddy reverse-proxy \
         --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
         --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" \
-        >"$([ "${log_level}" == "debug" ] && echo "/dev/stdout" || echo "/dev/null")" 2>&1 &
+        > "${output}" 2>&1 &
     waiting_process caddy
     podman login \
         --username drycc \
         --password drycc \
-        --tls-verify=false \
-        "${registry}" \
+        --tls-verify=false "${registry}" \
         > /dev/null
 fi
 
@@ -87,33 +88,42 @@ fi
 image_name=$(echo "${IMG_NAME}" | awk -F ':' '{print $1}')
 image_tag=$(echo "${IMG_NAME}" | awk -F ':' '{print $2}')
 image_repo="${registry}/${image_name}:${image_tag}"
-image_cache_repo="${registry}/${image_name}:latest"
+image_cache_repo="${registry}/${image_name}:cache"
+image_latest_repo="${registry}/${image_name}:latest"
 
-# Pull latest image as cache
-{
-    echo "---> Reusing cache"
-    podman pull "${image_cache_repo}" --tls-verify=false >/dev/null 2>&1
-} || {
-    echo "---> Cache not found"
-}
 # Building
-export LIFECYCLE_IMAGE=docker.io/buildpacksio/lifecycle:0.12.0-rc.1
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
-    podman build -t "${image_cache_repo}" --network host .
+    if [[ $log_level == "debug" ]] ; then
+        podman build --tag"${image_repo}" --network host .
+        podman push "${image_repo}" --tls-verify=false
+    else
+        podman build --quiet --tag "${image_repo}" --network host .
+        podman push "${image_repo}" --quiet --tls-verify=false
+    fi
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
-    pack build "${image_cache_repo}" \
-        --builder "${pack_builder}" \
-	--docker-host "${DOCKER_HOST}" \
-	--lifecycle-image "${LIFECYCLE_IMAGE}" \
-	--trust-builder \
-	--network host
+    if [[ $log_level == "debug" ]] ; then
+        pack build "${image_repo}" \
+            --builder "${pack_builder}" \
+            --docker-host "${DOCKER_HOST}" \
+            --previous-image "${image_latest_repo}" \
+            --trust-builder \
+            --publish \
+            --cache-image "${image_cache_repo}" \
+            --tag "${image_latest_repo}" \
+            --network host \
+            --verbose
+    else
+        pack build "${image_repo}" \
+            --builder "${pack_builder}" \
+            --docker-host "${DOCKER_HOST}" \
+            --previous-image "${image_latest_repo}" \
+            --trust-builder \
+            --publish \
+            --cache-image "${image_cache_repo}" \
+            --tag "${image_latest_repo}" \
+            --network host
+    fi
 fi
-
-# Publish image
-echo "---> Publishing image"
-podman tag "${image_cache_repo}" "${image_repo}"
-podman push "${image_cache_repo}" --tls-verify=false
-podman push "${image_repo}" --tls-verify=false
