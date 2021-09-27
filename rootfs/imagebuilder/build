@@ -14,16 +14,17 @@ trap clean_before_exit EXIT
 function waiting_process {
     echo -e "\\033[32m---> Waiting $1 running.\\033[0m"
     for i in {0..4}; do
-        pid=$(pgrep "$1")
-        if [ -z "$pid" ] && [[ $i == 3 ]]; then
-	    echo -e "\\033[31m---> Process $1 failed.\\033[0m"
-            exit 1
-        elif [ -z "$pid" ]; then
-            sleep 3
-        else
+        if ps -C "$1" 1>/dev/null ; then
             sleep 1
-	    echo -e "\\033[32m---> Process $1 started.\\033[0m"
+            echo -e "\\033[32m---> Process $1 started.\\033[0m"
             break
+        else
+            if [[ $i == 3 ]]; then
+                echo -e "\\033[31m---> Process $1 failed.\\033[0m"
+                exit 1
+            else
+                sleep 3
+            fi
         fi
     done
 }
