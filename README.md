@@ -13,6 +13,8 @@ The V3 version of imagebuilder unifies the building model, uses the latest CNCF 
 
 You can use `DRYCC_STACK` specifies the construction mode. Currently, you can choose two construction formats: `container` and `buildpack`.
 
+If you want to disable caching during building, you only need to generate a `.clear-cache` file in the root directory of the project.
+
 # Development
 
 The Drycc project welcomes contributions from all developers. The high level process for development matches many other open source projects. See below for an outline.

@@ -105,26 +105,21 @@ if [[ "${DRYCC_STACK}" == "container" ]] ; then
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
-    if [[ $log_level == "debug" ]] ; then
-        pack build "${image_repo}" \
-            --builder "${pack_builder}" \
-            --docker-host "${DOCKER_HOST}" \
-            --previous-image "${image_latest_repo}" \
+    pack_command="pack build ${image_repo} \
+            --builder ${pack_builder} \
+            --docker-host ${DOCKER_HOST} \
+            --previous-image ${image_latest_repo} \
             --trust-builder \
             --publish \
-            --cache-image "${image_cache_repo}" \
-            --tag "${image_latest_repo}" \
+            --cache-image ${image_cache_repo} \
+            --tag ${image_latest_repo} \
             --network host \
-            --verbose
-    else
-        pack build "${image_repo}" \
-            --builder "${pack_builder}" \
-            --docker-host "${DOCKER_HOST}" \
-            --previous-image "${image_latest_repo}" \
-            --trust-builder \
-            --publish \
-            --cache-image "${image_cache_repo}" \
-            --tag "${image_latest_repo}" \
-            --network host
+            --verbose"
+    if [[ $log_level == "debug" ]] ; then
+        pack_command="$pack_command --verbose"
     fi
+    if [[ -f .clear-cache ]]; then
+        pack_command="$pack_command --clear-cache"
+    fi
+    $pack_command
 fi
