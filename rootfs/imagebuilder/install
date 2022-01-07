@@ -17,7 +17,7 @@ init_arch() {
 }
 init_arch
 
-CADDY_DOWNLOAD_URL="https://github.com/caddyserver/caddy/releases/download/v2.4.5/caddy_2.4.5_linux_${ARCH}.tar.gz"
+CADDY_DOWNLOAD_URL="https://github.com/caddyserver/caddy/releases/download/v2.4.6/caddy_2.4.6_linux_${ARCH}.tar.gz"
 (curl -sSL "${CADDY_DOWNLOAD_URL}" | tar -C /usr/local/bin/ --no-same-owner -xzv caddy)
 
 dnf install -yq procps-ng psmisc
