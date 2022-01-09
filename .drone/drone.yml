@@ -8,7 +8,7 @@ platform:
 
 steps:
 - name: test
-  image: docker.io/drycc/go-dev
+  image: docker.io/drycc/dind
   pull: always
   privileged: true
   commands:
@@ -27,7 +27,7 @@ steps:
     path: /etc/containers/registries.conf
 
 - name: publish
-  image: docker.io/drycc/go-dev
+  image: docker.io/drycc/dind
   pull: always
   privileged: true
   commands:
@@ -73,7 +73,7 @@ platform:
 
 steps:
 - name: publish
-  image: docker.io/drycc/go-dev
+  image: docker.io/drycc/dind
   pull: always
   privileged: true
   commands:
