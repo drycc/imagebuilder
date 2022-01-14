@@ -9,13 +9,13 @@ data:
     [
         {
             "name": "container",
-            "image": "{{.Values.image_registry}}/{{.Values.image_org}}/imagebuilder:{{.Values.image_tag}}"
+            "image": "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/imagebuilder:{{.Values.imageTag}}"
         },
         {
             "name": "buildpack",
-            "image": "{{.Values.image_registry}}/{{.Values.image_org}}/imagebuilder:{{.Values.image_tag}}"
+            "image": "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/imagebuilder:{{.Values.imageTag}}"
         }
     ]
   registries.conf: |
-    {{- .Values.container_registries | nindent 4 }}
-  image_pull_policy: {{ .Values.image_pull_policy }}
+    {{- .Values.containerRegistries | nindent 4 }}
+  imagePullPolicy: {{ .Values.imagePullPolicy }}
