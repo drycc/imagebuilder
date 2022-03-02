@@ -1,7 +1,7 @@
 FROM docker.io/drycc/base:bullseye
 
 ADD . /
-ENV PODMAN_VERSION="3.4.4" \
+ENV PODMAN_VERSION="4.0.1" \
   MC_VERSION="2022.02.26.03.58.31" \
   CADDY_VERSION="2.4.6" \
   PACK_VERSION="0.24.0"
