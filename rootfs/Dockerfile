@@ -1,17 +1,34 @@
-FROM docker.io/minio/mc:latest as mc
-FROM docker.io/drycc/go-dev:latest as go-dev
-
-FROM quay.io/containers/podman:latest
+FROM docker.io/drycc/base:bullseye
 
 ADD . /
-COPY --from=mc /usr/bin/mc /bin/mc
-COPY --from=go-dev /usr/local/bin/pack /bin/pack
+ENV PODMAN_VERSION="3.4.4" \
+  MC_VERSION="RELEASE.2022-02-26T03-58-31Z" \
+  CADDY_VERSION="2.4.6" \
+  PACK_VERSION="0.24.0"
 
-RUN /imagebuilder/install
+RUN install-packages procps psmisc \
+  && install-stack podman $PODMAN_VERSION \
+  && install-stack mc $MC_VERSION \
+  && install-stack caddy $CADDY_VERSION \
+  && install-stack pack $PACK_VERSION \
+  && rm -rf \
+      /usr/share/doc \
+      /usr/share/man \
+      /usr/share/info \
+      /usr/share/locale \
+      /var/lib/apt/lists/* \
+      /var/log/* \
+      /var/cache/debconf/* \
+      /etc/systemd \
+      /lib/lsb \
+      /lib/udev \
+      /usr/lib/`echo $(uname -m)`-linux-gnu/gconv/IBM* \
+      /usr/lib/`echo $(uname -m)`-linux-gnu/gconv/EBC* \
+  && mkdir -p /usr/share/man/man{1..8}
 
 WORKDIR /app
 ENV HOME /tmp
 ENV XDG_DATA_HOME /tmp
 ENV XDG_CONFIG_HOME /tmp/.config
 
-ENTRYPOINT ["/imagebuilder/build"]
+ENTRYPOINT ["init-stack", "/imagebuilder/build"]
