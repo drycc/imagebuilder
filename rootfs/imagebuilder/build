@@ -52,7 +52,7 @@ if [[ -n "${TAR_PATH}" ]]; then
     tar -xzf /tmp/app.tgz -C /app/ && unset TAR_PATH
 fi
 
-pack_builder="docker.io/drycc/buildpacks:20"
+pack_builder="docker.io/drycc/buildpacks:bullseye"
 if [[ -f .pack-builder ]]; then
     pack_builder=$(< .pack-builder tr -d '[:space:]')
 fi
