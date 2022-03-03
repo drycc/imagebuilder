@@ -29,22 +29,20 @@ function waiting_process {
     done
 }
 
-# Start podman service
-export DOCKER_PORT=1234
-export DOCKER_HOST=tcp://127.0.0.1:${DOCKER_PORT}
-
 log_level="error"
 if [[ "${DRYCC_DEBUG}" ]]; then
     log_level="debug"
     unset DRYCC_DEBUG
 fi
 
+mkdir -p "${HOME}"/.config/containers
+cp -rf /opt/drycc/podman/etc/containers/* "${HOME}"/.config/containers
 registries="/etc/imagebuilder/registries.conf"
 if [ -f "${registries}" ]; then
-    cat "${registries}" > /opt/drycc/podman/etc/containers/registries.conf
+    cat "${registries}" > "${HOME}"/.config/containers/registries.conf
 fi
 
-podman system service --time 0 tcp:0.0.0.0:${DOCKER_PORT} &
+podman system service --time 0 &
 
 waiting_process podman
 if [[ -n "${TAR_PATH}" ]]; then
@@ -68,15 +66,14 @@ if [[ "${DRYCC_REGISTRY_LOCATION}" == "off-cluster" ]] ; then
 else
     # Start registry proxy
     registry="${DRYCC_REGISTRY_PROXY_HOST}:${DRYCC_REGISTRY_PROXY_PORT}"
-    if [[ ${log_level} == "debug" ]] ; then
-        output="/dev/stdout"
-    else
-        output="/dev/null"
-    fi
-    caddy reverse-proxy \
+
+    caddy_command="caddy reverse-proxy \
         --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
-        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}" \
-        > "${output}" 2>&1 &
+        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}""
+    if [[ ${log_level} != "debug" ]] ; then
+        caddy_command="${caddy_command} > /dev/null"
+    fi
+    $caddy_command 2>&1 &
     waiting_process caddy
     podman login \
         --username drycc \
@@ -105,6 +102,9 @@ if [[ "${DRYCC_STACK}" == "container" ]] ; then
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
+    # podman connection
+    readonly DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
+    export DOCKER_HOST
     pack_command="pack build ${image_repo} \
             --builder ${pack_builder} \
             --docker-host ${DOCKER_HOST} \
@@ -113,8 +113,7 @@ else
             --publish \
             --cache-image ${image_cache_repo} \
             --tag ${image_latest_repo} \
-            --network host \
-            --verbose"
+            --network host"
     if [[ $log_level == "debug" ]] ; then
         pack_command="$pack_command --verbose"
     fi
