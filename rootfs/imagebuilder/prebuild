@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -e
+
+mount --make-rshared /
+exec gosu drycc "$@"
