@@ -49,7 +49,7 @@ podman system service --time 0 tcp:0.0.0.0:${DOCKER_PORT} &
 waiting_process podman
 if [[ -n "${TAR_PATH}" ]]; then
     get_object
-    tar -xzf /tmp/app.tgz -C /app/ && unset TAR_PATH
+    tar -xzf /tmp/app.tgz -C /workspace/ && unset TAR_PATH
 fi
 
 pack_builder="docker.io/drycc/buildpacks:bullseye"

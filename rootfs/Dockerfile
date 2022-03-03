@@ -26,7 +26,7 @@ RUN install-packages procps psmisc \
       /usr/lib/`echo $(uname -m)`-linux-gnu/gconv/EBC* \
   && mkdir -p /usr/share/man/man{1..8}
 
-WORKDIR /app
+WORKDIR /workspace
 ENV HOME /tmp
 ENV XDG_DATA_HOME /tmp
 ENV XDG_CONFIG_HOME /tmp/.config
