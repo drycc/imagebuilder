@@ -3,10 +3,10 @@ FROM docker.io/drycc/base:bullseye
 ENV DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
-  PODMAN_VERSION="4.0.2" \
-  MC_VERSION="2022.02.26.03.58.31" \
+  PODMAN_VERSION="4.0.3" \
+  MC_VERSION="2022.04.01.23.44.48" \
   CADDY_VERSION="2.4.6" \
-  PACK_VERSION="0.24.0" \
+  PACK_VERSION="0.24.1" \
   GOSU_VERSION="1.14"
 
 RUN groupadd drycc --gid ${DRYCC_GID} \
