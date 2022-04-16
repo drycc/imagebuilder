@@ -50,7 +50,7 @@ if [[ -n "${TAR_PATH}" ]]; then
     tar -xzf /tmp/app.tgz -C /workspace/ && unset TAR_PATH
 fi
 
-pack_builder="registry.drycc.cc/drycc/buildpacks:bullseye"
+pack_builder=$(< /etc/imagebuilder/defaultBuildpacksURL tr -d '[:space:]')
 if [[ -f .pack-builder ]]; then
     pack_builder=$(< .pack-builder tr -d '[:space:]')
 fi
