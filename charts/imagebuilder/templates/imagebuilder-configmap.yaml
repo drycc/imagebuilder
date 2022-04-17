@@ -19,4 +19,4 @@ data:
   registries.conf: |
     {{- .Values.containerRegistries | nindent 4 }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
-  defaultBuildpacksURL: ="{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"
+  defaultBuildpacksUrl: ="{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"
