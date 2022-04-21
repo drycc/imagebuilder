@@ -5,6 +5,7 @@ metadata:
   labels:
     heritage: drycc
 data:
+  buildpacks: "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"
   images.json: |
     [
         {
@@ -19,4 +20,3 @@ data:
   registries.conf: |
     {{- .Values.containerRegistries | nindent 4 }}
   imagePullPolicy: {{ .Values.imagePullPolicy }}
-  defaultBuildpacksUrl: ="{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"

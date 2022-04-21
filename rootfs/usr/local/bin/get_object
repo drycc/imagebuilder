@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-GET_PATH=/tmp/app.tgz
-# shellcheck disable=SC1091
-source /usr/local/bin/normalize_storage
 
-mc cp minio/"${MINIO_BUCKET}/${TAR_PATH}" "${GET_PATH}" &>/tmp/objstorage.log
+mc config host add minio \
+  "${DRYCC_MINIO_ENDPOINT}" \
+  "${DRYCC_MINIO_ACCESSKEY}" \
+  "${DRYCC_MINIO_SECRETKEY}" \
+  --lookup "${DRYCC_MINIO_LOOKUP}" \
+  --api s3v4
+
+GET_PATH=/tmp/app.tgz
+
+mc cp minio/"${DRYCC_MINIO_BUCKET}/${TAR_PATH}" "${GET_PATH}"

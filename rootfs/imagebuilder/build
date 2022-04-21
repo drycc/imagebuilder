@@ -50,54 +50,51 @@ if [[ -n "${TAR_PATH}" ]]; then
     tar -xzf /tmp/app.tgz -C /workspace/ && unset TAR_PATH
 fi
 
-pack_builder=$(< /etc/imagebuilder/defaultBuildpacksUrl tr -d '[:space:]')
+pack_builder=$(< /etc/imagebuilder/buildpacks tr -d '[:space:]')
 if [[ -f .pack-builder ]]; then
     pack_builder=$(< .pack-builder tr -d '[:space:]')
 fi
 
 # Get registry and login
 if [[ "${DRYCC_REGISTRY_LOCATION}" == "off-cluster" ]] ; then
-    registry="${DRYCC_REGISTRY_HOSTNAME}/${DRYCC_REGISTRY_ORGANIZATION}"
     podman login \
         --username "${DRYCC_REGISTRY_USERNAME}" \
         --password "${DRYCC_REGISTRY_PASSWORD}" \
-        "${DRYCC_REGISTRY_HOSTNAME}" \
+        "${DRYCC_REGISTRY_HOST}" \
         --tls-verify=false > /dev/null
 else
     # Start registry proxy
-    registry="${DRYCC_REGISTRY_PROXY_HOST}:${DRYCC_REGISTRY_PROXY_PORT}"
-
+    DRYCC_REGISTRY_PROXY_HOST="${DRYCC_REGISTRY_PROXY_HOST:?DRYCC_REGISTRY_PROXY_HOST env required}"
+    DRYCC_REGISTRY_PROXY_PORT=$(echo "${DRYCC_REGISTRY_PROXY_HOST}" | awk -F ':' '{print $2}')
     caddy_command="caddy reverse-proxy \
-        --from ":${DRYCC_REGISTRY_PROXY_PORT}" \
-        --to "${DRYCC_REGISTRY_SERVICE_HOST}:${DRYCC_REGISTRY_SERVICE_PORT}""
+        --from :${DRYCC_REGISTRY_PROXY_PORT} \
+        --to ${DRYCC_REGISTRY_HOST}"
     if [[ ${log_level} != "debug" ]] ; then
         caddy_command="${caddy_command} > /dev/null"
     fi
     $caddy_command 2>&1 &
     waiting_process caddy
     podman login \
-        --username drycc \
-        --password drycc \
-        --tls-verify=false "${registry}" \
-        > /dev/null
+        --username "${DRYCC_REGISTRY_USERNAME}" \
+        --password "${DRYCC_REGISTRY_PASSWORD}" \
+        "${DRYCC_REGISTRY_PROXY_HOST}" \
+        --tls-verify=false > /dev/null
 fi
 
 # Get image name and image tag
-image_name=$(echo "${IMG_NAME}" | awk -F ':' '{print $1}')
-image_tag=$(echo "${IMG_NAME}" | awk -F ':' '{print $2}')
-image_repo="${registry}/${image_name}:${image_tag}"
-image_cache_repo="${registry}/${image_name}:cache"
-image_latest_repo="${registry}/${image_name}:latest"
+image_base_name=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $1}')
+image_cache_name="${image_base_name}":cache
+image_latest_name="${image_base_name}":latest
 
 # Building
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
     if [[ $log_level == "debug" ]] ; then
-        podman build --tag"${image_repo}" --network host .
-        podman push "${image_repo}" --tls-verify=false
+        podman build --tag"${IMAGE_NAME}" --network host .
+        podman push "${IMAGE_NAME}" --tls-verify=false
     else
-        podman build --quiet --tag "${image_repo}" --network host .
-        podman push "${image_repo}" --quiet --tls-verify=false
+        podman build --quiet --tag "${IMAGE_NAME}" --network host .
+        podman push "${IMAGE_NAME}" --quiet --tls-verify=false
     fi
 else
     echo "---> Building pack"
@@ -105,14 +102,14 @@ else
     # podman connection
     readonly DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
     export DOCKER_HOST
-    pack_command="pack build ${image_repo} \
+    pack_command="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
             --docker-host ${DOCKER_HOST} \
-            --previous-image ${image_latest_repo} \
+            --previous-image ${image_latest_name} \
             --trust-builder \
             --publish \
-            --cache-image ${image_cache_repo} \
-            --tag ${image_latest_repo} \
+            --cache-image ${image_cache_name} \
+            --tag ${image_latest_name} \
             --network host"
     if [[ $log_level == "debug" ]] ; then
         pack_command="$pack_command --verbose"
