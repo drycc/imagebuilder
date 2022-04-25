@@ -35,12 +35,20 @@ if [[ "${DRYCC_DEBUG}" ]]; then
     unset DRYCC_DEBUG
 fi
 
-mkdir -p "${HOME}"/.config/containers
-cp -rf /opt/drycc/podman/etc/containers/* "${HOME}"/.config/containers
-registries="/etc/imagebuilder/registries.conf"
-if [ -f "${registries}" ]; then
-    cat "${registries}" > "${HOME}"/.config/containers/registries.conf
+CONTAINERS_CONFIG_DIR="${HOME}"/.config/containers
+mkdir -p "${CONTAINERS_CONFIG_DIR}"
+from_registries_file="/etc/imagebuilder/registries.conf"
+cp -rf /opt/drycc/podman/etc/containers/* "${CONTAINERS_CONFIG_DIR}"
+if [ -f "${from_registries_file}" ]; then
+    install -D  "${from_registries_file}" "${CONTAINERS_CONFIG_DIR}"/registries.conf
 fi
+
+readonly REGISTRY_AUTH_FILE="${HOME}"/.docker/config.json
+from_auths_file="/etc/imagebuilder/auths.json"
+if [ -f "${from_auths_file}" ]; then
+    install -D "${from_auths_file}" "${REGISTRY_AUTH_FILE}"
+fi
+export REGISTRY_AUTH_FILE
 
 podman system service --time 0 &
 
@@ -82,7 +90,8 @@ else
 fi
 
 # Get image name and image tag
-image_base_name=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $1}')
+image_tag=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $NF}')
+image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
 image_cache_name="${image_base_name}":cache
 image_latest_name="${image_base_name}":latest
 
@@ -102,20 +111,20 @@ else
     # podman connection
     readonly DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
     export DOCKER_HOST
-    pack_command="pack build ${IMAGE_NAME} \
+
+    pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
             --docker-host ${DOCKER_HOST} \
             --previous-image ${image_latest_name} \
-            --trust-builder \
             --publish \
             --cache-image ${image_cache_name} \
             --tag ${image_latest_name} \
             --network host"
     if [[ $log_level == "debug" ]] ; then
-        pack_command="$pack_command --verbose"
+        pack_build="$pack_build --verbose"
     fi
     if [[ -f .clear-cache ]]; then
-        pack_command="$pack_command --clear-cache"
+        pack_build="$pack_build --clear-cache"
     fi
-    $pack_command
+    $pack_build
 fi

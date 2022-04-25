@@ -6,6 +6,14 @@ metadata:
     heritage: drycc
 data:
   buildpacks: "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"
+  auths.json: |
+    {
+        "auths": {
+            "registry.drycc.cc": {
+              "auth": "YW5vbnltb3VzOmFub255bW91cw=="
+            }
+        }
+    }
   images.json: |
     [
         {
