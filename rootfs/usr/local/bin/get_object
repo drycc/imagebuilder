@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-mc config host add minio \
-  "${DRYCC_MINIO_ENDPOINT}" \
-  "${DRYCC_MINIO_ACCESSKEY}" \
-  "${DRYCC_MINIO_SECRETKEY}" \
-  --lookup "${DRYCC_MINIO_LOOKUP}" \
+mc config host add storage \
+  "${DRYCC_STORAGE_ENDPOINT}" \
+  "${DRYCC_STORAGE_ACCESSKEY}" \
+  "${DRYCC_STORAGE_SECRETKEY}" \
+  --lookup "${DRYCC_STORAGE_LOOKUP}" \
   --api s3v4
 
 GET_PATH=/tmp/app.tgz
 
-mc cp minio/"${DRYCC_MINIO_BUCKET}/${TAR_PATH}" "${GET_PATH}"
+mc cp storage/"${DRYCC_STORAGE_BUCKET}/${TAR_PATH}" "${GET_PATH}"

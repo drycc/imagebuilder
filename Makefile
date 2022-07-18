@@ -4,11 +4,7 @@ PLATFORM ?= linux/amd64,linux/arm64
 
 export GO15VENDOREXPERIMENT=1
 
-# Note that Minio currently uses CGO.
-
-LDFLAGS := "-s -X main.version=${VERSION}"
 IMAGE_PREFIX ?= drycc
-BINDIR := ./rootfs/bin
 
 include versioning.mk
 
