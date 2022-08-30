@@ -3,10 +3,10 @@ FROM registry.drycc.cc/drycc/base:bullseye
 ENV DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
-  PODMAN_VERSION="4.0.3" \
-  MC_VERSION="2022.04.01.23.44.48" \
-  CADDY_VERSION="2.4.6" \
-  PACK_VERSION="0.26.0" \
+  PODMAN_VERSION="4.2.0" \
+  MC_VERSION="2022.08.28.20.08.11" \
+  CADDY_VERSION="2.5.2" \
+  PACK_VERSION="0.27.0" \
   GOSU_VERSION="1.14"
 
 RUN groupadd drycc --gid ${DRYCC_GID} \
