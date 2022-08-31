@@ -126,5 +126,8 @@ else
     if [[ -f .clear-cache ]]; then
         pack_build="$pack_build --clear-cache"
     fi
+    if [[ -f .build-env ]] ; then
+        pack_build="$pack_build --env-file .build-env"
+    fi
     $pack_build
 fi
