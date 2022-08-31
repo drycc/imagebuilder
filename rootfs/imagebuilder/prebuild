@@ -3,5 +3,5 @@
 set -e
 
 mount --make-rshared /
-chown "${DRYCC_GID}":"${DRYCC_UID}" -R /workspace
+chown "${DRYCC_UID}":"${DRYCC_GID}" -R /workspace
 exec gosu "${DRYCC_UID}" "$@"

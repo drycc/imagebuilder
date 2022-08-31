@@ -21,7 +21,7 @@ RUN install-packages procps psmisc \
   && install-stack pack $PACK_VERSION \
   && install-stack gosu $GOSU_VERSION \
   && usermod --add-subuids 200000-201000 --add-subgids 200000-201000 drycc \
-  && chown -R ${DRYCC_GID}:${DRYCC_UID} /opt/drycc \
+  && chown -R ${DRYCC_UID}:${DRYCC_GID} /opt/drycc \
   && rm -rf \
       /usr/share/doc \
       /usr/share/man \
