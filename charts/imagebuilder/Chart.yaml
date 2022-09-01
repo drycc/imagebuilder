@@ -1,5 +1,6 @@
 name: imagebuilder
 home: https://github.com/drycc/imagebuilder
+apiVersion: v2
 version: v1.0.0
 description: Imagebuilder application builder for Drycc Workflow.
 maintainers:
