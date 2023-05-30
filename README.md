@@ -1,5 +1,5 @@
 # Drycc imagebuilder v3
-[![Build Status](https://woodpecker.drycc.cc/api/badges/drycc/imagebuilder/status.svgg)](https://woodpecker.drycc.cc/drycc/imagebuilder)
+[![Build Status](https://woodpecker.drycc.cc/api/badges/drycc/imagebuilder/status.svg)](https://woodpecker.drycc.cc/drycc/imagebuilder)
 
 Drycc (pronounced DAY-iss) Workflow is an open source Platform as a Service (PaaS) that adds a developer-friendly layer to any [Kubernetes](http://kubernetes.io) cluster, making it easy to deploy and manage applications on your own servers.
 
