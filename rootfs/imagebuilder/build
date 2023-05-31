@@ -119,6 +119,7 @@ else
             --publish \
             --cache-image ${image_cache_name} \
             --tag ${image_latest_name} \
+            --default-process web \
             --network host"
     if [[ $log_level == "debug" ]] ; then
         pack_build="$pack_build --verbose"
