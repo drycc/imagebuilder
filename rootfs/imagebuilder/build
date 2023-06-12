@@ -90,6 +90,7 @@ else
 fi
 
 # Get image name and image tag
+drycc_app=$(echo "${IMAGE_NAME}" | awk -F '/' '{print $NF}' | awk -F ':' '{print $1}')
 image_tag=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $NF}')
 image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
 image_cache_name="${image_base_name}":cache
@@ -114,6 +115,7 @@ else
 
     pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
+            --env DRYCC_APP=${drycc_app} \
             --docker-host ${DOCKER_HOST} \
             --previous-image ${image_latest_name} \
             --publish \
