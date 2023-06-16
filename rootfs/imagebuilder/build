@@ -43,7 +43,8 @@ if [ -f "${from_registries_file}" ]; then
     install -D  "${from_registries_file}" "${CONTAINERS_CONFIG_DIR}"/registries.conf
 fi
 
-readonly REGISTRY_AUTH_FILE="${HOME}"/.docker/config.json
+REGISTRY_AUTH_FILE="${HOME}"/.docker/config.json
+readonly REGISTRY_AUTH_FILE
 from_auths_file="/etc/imagebuilder/auths.json"
 if [ -f "${from_auths_file}" ]; then
     install -D "${from_auths_file}" "${REGISTRY_AUTH_FILE}"
@@ -110,7 +111,8 @@ else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
     # podman connection
-    readonly DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
+    DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
+    readonly DOCKER_HOST
     export DOCKER_HOST
 
     pack_build="pack build ${IMAGE_NAME} \

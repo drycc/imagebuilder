@@ -5,7 +5,7 @@ metadata:
   labels:
     heritage: drycc
 data:
-  buildpacks: "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bullseye"
+  buildpacks: "{{.Values.imageRegistry}}/{{.Values.imageOrg}}/buildpacks:bookworm"
   auths.json: |
     {
         "auths": {
