@@ -1,10 +1,11 @@
-FROM registry.drycc.cc/drycc/base:bookworm
+ARG CODENAME
+FROM registry.drycc.cc/drycc/base:${CODENAME}
 
 ENV DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
   PODMAN_VERSION="4.5.1" \
-  MC_VERSION="2023.06.15.15.08.26" \
+  MC_VERSION="2023.06.23.18.12.07" \
   CADDY_VERSION="2.6.4" \
   PACK_VERSION="0.29.0" \
   GOSU_VERSION="1.16"

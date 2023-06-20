@@ -2,6 +2,7 @@ imageOrg: "drycc"
 imagePullPolicy: "Always"
 imageTag: "canary"
 imageRegistry: "registry.drycc.cc"
+codename: bookworm
 containerRegistries: |
   unqualified-search-registries = ["registry.drycc.cc"]
   short-name-mode="permissive"

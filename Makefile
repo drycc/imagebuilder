@@ -28,11 +28,11 @@ build:
 	@echo Nothing to do.
 
 docker-build:
-	docker build ${DOCKER_BUILD_FLAGS} -t ${IMAGE} -f rootfs/Dockerfile rootfs
+	docker build ${DOCKER_BUILD_FLAGS} --build-arg CODENAME=${CODENAME} -t ${IMAGE} -f rootfs/Dockerfile rootfs
 	docker tag ${IMAGE} ${MUTABLE_IMAGE}
 
 docker-buildx:
-	docker buildx build --platform ${PLATFORM} ${DOCKER_BUILD_FLAGS} -t ${IMAGE} -f rootfs/Dockerfile rootfs --push
+	docker buildx build --build-arg CODENAME=${CODENAME} --platform ${PLATFORM} ${DOCKER_BUILD_FLAGS} -t ${IMAGE} -f rootfs/Dockerfile rootfs --push
 
 deploy: docker-build docker-push
 
