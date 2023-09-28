@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -eo pipefail
 shopt -s expand_aliases
-alias podman="podman --cgroup-manager=cgroupfs --events-backend=file"
+
+log_level="error"
+if [[ "${DRYCC_DEBUG}" ]]; then
+    log_level="debug"
+    unset DRYCC_DEBUG
+fi
+
+alias podman='podman --log-level ${log_level} --cgroup-manager=cgroupfs --events-backend=file'
 
 function clean_before_exit {
     # delay before exiting, so stdout/stderr flushes through the logging system
@@ -29,12 +36,6 @@ function waiting_process {
     done
 }
 
-log_level="error"
-if [[ "${DRYCC_DEBUG}" ]]; then
-    log_level="debug"
-    unset DRYCC_DEBUG
-fi
-
 CONTAINERS_CONFIG_DIR="${HOME}"/.config/containers
 mkdir -p "${CONTAINERS_CONFIG_DIR}"
 from_registries_file="/etc/imagebuilder/registries.conf"
@@ -43,6 +44,8 @@ if [ -f "${from_registries_file}" ]; then
     install -D  "${from_registries_file}" "${CONTAINERS_CONFIG_DIR}"/registries.conf
 fi
 
+# The directory cannot be changed, the position is hard coded, pack cli needs to be used.
+# https://github.com/buildpacks/pack/blob/main/internal/docker/context.go
 REGISTRY_AUTH_FILE="${HOME}"/.docker/config.json
 readonly REGISTRY_AUTH_FILE
 from_auths_file="/etc/imagebuilder/auths.json"
@@ -100,23 +103,27 @@ image_latest_name="${image_base_name}":latest
 # Building
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
-    if [[ $log_level == "debug" ]] ; then
-        podman build --tag"${IMAGE_NAME}" --network host .
-        podman push "${IMAGE_NAME}" --tls-verify=false
-    else
-        podman build --quiet --tag "${IMAGE_NAME}" --network host .
-        podman push "${IMAGE_NAME}" --quiet --tls-verify=false
+    podman_build="podman build . --tag ${IMAGE_NAME} --network host"
+    podman_push="podman push ${IMAGE_NAME} --tls-verify=false"
+    if [[ -f .build-env ]] ; then
+        for build_arg in $( < .build-env )
+        do
+            podman_build="$podman_build --build-arg $build_arg"
+        done
     fi
+    $podman_build
+    $podman_push
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
     # podman connection
-    DOCKER_HOST="unix://$(podman info -f "{{.Host.RemoteSocket.Path}}")"
+    DOCKER_HOST="unix://$(podman info -f '{{.Host.RemoteSocket.Path}}')"
     readonly DOCKER_HOST
     export DOCKER_HOST
 
     pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
+            --lifecycle-image ${pack_builder} \
             --env DRYCC_APP=${drycc_app} \
             --docker-host ${DOCKER_HOST} \
             --previous-image ${image_latest_name} \

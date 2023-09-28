@@ -16,10 +16,10 @@ SHELL_SCRIPTS = $(wildcard _scripts/*.sh) \
 # and other build options
 DEV_ENV_IMAGE := ${DEV_REGISTRY}/drycc/go-dev
 DEV_ENV_WORK_DIR := /opt/drycc/go/src/${REPO_PATH}
-DEV_ENV_CMD := docker run --rm -v ${CURDIR}:${DEV_ENV_WORK_DIR} -w ${DEV_ENV_WORK_DIR} ${DEV_ENV_IMAGE}
-DEV_ENV_CMD_INT := docker run -it --rm -v ${CURDIR}:${DEV_ENV_WORK_DIR} -w ${DEV_ENV_WORK_DIR} ${DEV_ENV_IMAGE}
+DEV_ENV_CMD := podman run --rm -v ${CURDIR}:${DEV_ENV_WORK_DIR} -w ${DEV_ENV_WORK_DIR} ${DEV_ENV_IMAGE}
+DEV_ENV_CMD_INT := podman run -it --rm -v ${CURDIR}:${DEV_ENV_WORK_DIR} -w ${DEV_ENV_WORK_DIR} ${DEV_ENV_IMAGE}
 
-all: build docker-build docker-push
+all: build podman-build podman-push
 
 bootstrap:
 	@echo Nothing to do.
@@ -27,14 +27,11 @@ bootstrap:
 build:
 	@echo Nothing to do.
 
-docker-build:
-	docker build ${DOCKER_BUILD_FLAGS} --build-arg CODENAME=${CODENAME} -t ${IMAGE} -f rootfs/Dockerfile rootfs
-	docker tag ${IMAGE} ${MUTABLE_IMAGE}
+podman-build:
+	podman build ${CONTAINER_BUILD_FLAGS} --build-arg CODENAME=${CODENAME} -t ${IMAGE} -f rootfs/Dockerfile rootfs
+	podman tag ${IMAGE} ${MUTABLE_IMAGE}
 
-docker-buildx:
-	docker buildx build --build-arg CODENAME=${CODENAME} --platform ${PLATFORM} ${DOCKER_BUILD_FLAGS} -t ${IMAGE} -f rootfs/Dockerfile rootfs --push
-
-deploy: docker-build docker-push
+deploy: podman-build podman-push
 
 kube-pod: kube-service
 	kubectl create -f ${POD}
@@ -61,5 +58,5 @@ test-style:
 test-functional:
 	@echo "Implement functional tests in _tests directory"
 
-.PHONY: all bootstrap build docker-build docker-push deploy kube-pod kube-secrets \
+.PHONY: all bootstrap build podman-build podman-push deploy kube-pod kube-secrets \
 	secrets kube-service kube-clean test

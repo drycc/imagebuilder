@@ -4,10 +4,10 @@ FROM registry.drycc.cc/drycc/base:${CODENAME}
 ENV DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
-  PODMAN_VERSION="4.6.0" \
-  MC_VERSION="2023.07.21.20.44.27" \
+  PODMAN_VERSION="4.7.1" \
+  MC_VERSION="2023.09.20.15.22.31" \
   CADDY_VERSION="2.7.1" \
-  PACK_VERSION="0.29.0" \
+  PACK_VERSION="0.31.0" \
   GOSU_VERSION="1.16"
 
 RUN groupadd drycc --gid ${DRYCC_GID} \
@@ -41,4 +41,3 @@ RUN install-packages procps psmisc \
 WORKDIR /workspace
 
 ENTRYPOINT ["init-stack", "/imagebuilder/prebuild", "/imagebuilder/build"]
-
