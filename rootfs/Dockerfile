@@ -4,6 +4,8 @@ FROM registry.drycc.cc/drycc/base:${CODENAME}
 ENV DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
+  JQ_VERSION="1.7.1" \
+  YQ_VERSION="4.43.1" \
   PODMAN_VERSION="4.7.1" \
   MC_VERSION="2023.09.20.15.22.31" \
   CADDY_VERSION="2.7.1" \
@@ -16,6 +18,8 @@ RUN groupadd drycc --gid ${DRYCC_GID} \
 ADD . /
 
 RUN install-packages procps psmisc \
+  && install-stack jq $JQ_VERSION \
+  && install-stack yq $YQ_VERSION \
   && install-stack podman $PODMAN_VERSION \
   && install-stack mc $MC_VERSION \
   && install-stack caddy $CADDY_VERSION \

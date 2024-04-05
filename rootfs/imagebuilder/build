@@ -93,26 +93,50 @@ else
         --tls-verify=false > /dev/null
 fi
 
-# Get image name and image tag
-drycc_app=$(echo "${IMAGE_NAME}" | awk -F '/' '{print $NF}' | awk -F ':' '{print $1}')
-image_tag=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $NF}')
-image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
-image_cache_name="${image_base_name}":cache
-image_latest_name="${image_base_name}":latest
+envfile="${HOME}"/.config/build-env
+dryccfile="drycc.yaml"
+# create build-env
+touch "${envfile}"
+if [[ -f .build-env ]] ; then
+    cat .build-env >> "${envfile}"
+fi
+if [[ -f "$dryccfile" ]]; then
+    config=$(cat < "$dryccfile" | yq .build.config -o json)
+    if [[ $config != null ]]; then
+        mapfile -t items < <(echo "$config" | jq -c -r 'to_entries[] | (.key, .value)')
+        for ((i=0; i<"${#items[@]}"; i=i+2)); do
+            echo "${items[i]}=${items[i+1]}" >> "${envfile}"
+        done
+    fi
+fi
 
 # Building
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
     echo "---> Building container"
-    podman_build="podman build . --tag ${IMAGE_NAME} --network host"
-    podman_push="podman push ${IMAGE_NAME} --tls-verify=false"
-    if [[ -f .build-env ]] ; then
-        for build_arg in $( < .build-env )
+    builds=("web" "Dockerfile")
+    if [[ -e "$dryccfile" ]]; then
+        docker=$(cat < "$dryccfile" | yq .build.docker -o json)
+        if [[ $docker != null ]]; then
+            mapfile -t builds < <(echo "$docker" | jq -c -r 'to_entries[] | (.key, .value)')
+        fi
+    fi
+    for ((i=0; i<"${#builds[@]}"; i=i+2)); do
+        procfile_type="${builds[i]}"
+        if [[ "${procfile_type}" == "web" ]]; then
+            image="${IMAGE_NAME}"
+        else
+            image="${IMAGE_NAME}"-"${procfile_type}"
+        fi
+        dockerfile="${builds[i+1]}"
+        podman_build="podman build . -f ${dockerfile} --tag ${image} --network host"
+        podman_push="podman push ${image} --tls-verify=false"
+        for build_arg in $( < "${envfile}" )
         do
             podman_build="$podman_build --build-arg $build_arg"
         done
-    fi
-    $podman_build
-    $podman_push
+        $podman_build
+        $podman_push
+    done
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
@@ -120,6 +144,12 @@ else
     DOCKER_HOST="unix://$(podman info -f '{{.Host.RemoteSocket.Path}}')"
     readonly DOCKER_HOST
     export DOCKER_HOST
+    # Get image name and image tag
+    drycc_app=$(echo "${IMAGE_NAME}" | awk -F '/' '{print $NF}' | awk -F ':' '{print $1}')
+    image_tag=$(echo "${IMAGE_NAME}" | awk -F ':' '{print $NF}')
+    image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
+    image_cache_name="${image_base_name}":cache
+    image_latest_name="${image_base_name}":latest
 
     pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
@@ -131,15 +161,13 @@ else
             --cache-image ${image_cache_name} \
             --tag ${image_latest_name} \
             --default-process web \
+            --env-file ${envfile} \
             --network host"
     if [[ $log_level == "debug" ]] ; then
         pack_build="$pack_build --verbose"
     fi
     if [[ -f .clear-cache ]]; then
         pack_build="$pack_build --clear-cache"
-    fi
-    if [[ -f .build-env ]] ; then
-        pack_build="$pack_build --env-file .build-env"
     fi
     $pack_build
 fi
