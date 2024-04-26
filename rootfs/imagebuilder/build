@@ -36,6 +36,26 @@ function waiting_process {
     done
 }
 
+function write_build_env {
+    local envfile dryccfile command config items i
+    envfile=$1
+    dryccfile=$2
+    if [[ -z "$3" ]]; then
+        command=".build.config"
+    else
+        command=".build.config.${3}"
+    fi
+    if [[ -f "$dryccfile" ]]; then
+        config=$(cat < "$dryccfile" | yq "$command" -o json)
+        if [[ $config != null ]]; then
+            mapfile -t items < <(echo "$config" | jq -c -r 'to_entries[] | (.key, .value)')
+            for ((i=0; i<"${#items[@]}"; i=i+2)); do
+                echo "${items[i]}=${items[i+1]}" >> "${envfile}"
+            done
+        fi
+    fi
+}
+
 CONTAINERS_CONFIG_DIR="${HOME}"/.config/containers
 mkdir -p "${CONTAINERS_CONFIG_DIR}"
 from_registries_file="/etc/imagebuilder/registries.conf"
@@ -96,18 +116,9 @@ fi
 envfile="${HOME}"/.config/build-env
 dryccfile="drycc.yaml"
 # create build-env
-touch "${envfile}"
+echo "" > "${envfile}"
 if [[ -f .build-env ]] ; then
     cat .build-env >> "${envfile}"
-fi
-if [[ -f "$dryccfile" ]]; then
-    config=$(cat < "$dryccfile" | yq .build.config -o json)
-    if [[ $config != null ]]; then
-        mapfile -t items < <(echo "$config" | jq -c -r 'to_entries[] | (.key, .value)')
-        for ((i=0; i<"${#items[@]}"; i=i+2)); do
-            echo "${items[i]}=${items[i+1]}" >> "${envfile}"
-        done
-    fi
 fi
 
 # Building
@@ -118,6 +129,8 @@ if [[ "${DRYCC_STACK}" == "container" ]] ; then
         docker=$(cat < "$dryccfile" | yq .build.docker -o json)
         if [[ $docker != null ]]; then
             mapfile -t builds < <(echo "$docker" | jq -c -r 'to_entries[] | (.key, .value)')
+        else
+            write_build_env "$envfile" "$dryccfile"
         fi
     fi
     for ((i=0; i<"${#builds[@]}"; i=i+2)); do
@@ -131,6 +144,13 @@ if [[ "${DRYCC_STACK}" == "container" ]] ; then
         podman_build="podman build . -f ${dockerfile} --tag ${image} --network host"
         podman_push="podman push ${image} --tls-verify=false"
         for build_arg in $( < "${envfile}" )
+        do
+            podman_build="$podman_build --build-arg $build_arg"
+        done
+        typed_envfile="${HOME}/.config/build-env-${procfile_type}"
+        echo "" > "$typed_envfile"
+        write_build_env "$typed_envfile" "$dryccfile" "$procfile_type"
+        for build_arg in $( < "${typed_envfile}" )
         do
             podman_build="$podman_build --build-arg $build_arg"
         done
@@ -150,7 +170,7 @@ else
     image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
     image_cache_name="${image_base_name}":cache
     image_latest_name="${image_base_name}":latest
-
+    write_build_env "$envfile" "$dryccfile"
     pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
             --lifecycle-image ${pack_builder} \
