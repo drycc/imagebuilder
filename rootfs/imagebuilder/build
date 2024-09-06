@@ -74,8 +74,9 @@ if [ -f "${from_auths_file}" ]; then
 fi
 export REGISTRY_AUTH_FILE
 
-
-mkdir -p "/tmp/storage-run-$(id -u)/podman"
+# fix: failed to reexec: Permission denied
+podman version>/dev/null 2>&1 || podman version
+# podman service
 podman system service --time 0 &
 
 waiting_process podman
