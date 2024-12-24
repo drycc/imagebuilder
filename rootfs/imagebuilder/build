@@ -37,10 +37,12 @@ function waiting_process {
 }
 
 function write_build_env {
-    local envfile dryccfile command config items i
+    local envfile dryccfile command config items i arraytype
     envfile=$1
     dryccfile=$2
-    if [[ -z "$3" ]]; then
+    arraytype=$(cat < "$dryccfile" | yq ".build" -o json | jq '.config|type=="array"')
+
+    if [[ -z "$3" || "$arraytype" == "true" ]]; then
         command=".build.config"
     else
         command=".build.config.${3}"
@@ -48,7 +50,7 @@ function write_build_env {
     if [[ -f "$dryccfile" ]]; then
         config=$(cat < "$dryccfile" | yq "$command" -o json)
         if [[ $config != null ]]; then
-            mapfile -t items < <(echo "$config" | jq -c -r 'to_entries[] | (.key, .value)')
+            mapfile -t items < <(echo "$config" | jq -c -r '.[] | (.name, .value)')
             for ((i=0; i<"${#items[@]}"; i=i+2)); do
                 echo "${items[i]}=${items[i+1]}" >> "${envfile}"
             done
