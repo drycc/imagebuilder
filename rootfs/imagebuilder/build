@@ -36,21 +36,38 @@ function waiting_process {
     done
 }
 
+function podman_publish {
+    local image dryccfile
+    image=$1
+    dryccfile=$2
+
+    podman_build="podman build . -f ${dockerfile} --tag ${image} --network host"
+    podman_push="podman push ${image} --tls-verify=false"
+    # append build arg
+    for build_arg in $( < "${envfile}" )
+    do
+        podman_build="$podman_build --build-arg $build_arg"
+    done
+    # append ptype build arg
+    if [[ -n "$3" ]]; then
+        for build_arg in $( < "${3}" )
+        do
+            podman_build="$podman_build --build-arg $build_arg"
+        done
+    fi
+    # build and push
+    $podman_build
+    $podman_push
+}
+
 function write_build_env {
-    local envfile dryccfile command config items i arraytype
+    local envfile dryccfile config items i
     envfile=$1
     dryccfile=$2
-    arraytype=$(cat < "$dryccfile" | yq ".build" -o json | jq '.config|type=="array"')
-
-    if [[ -z "$3" || "$arraytype" == "true" ]]; then
-        command=".build.config"
-    else
-        command=".build.config.${3}"
-    fi
     if [[ -f "$dryccfile" ]]; then
-        config=$(cat < "$dryccfile" | yq "$command" -o json)
+        config=$(cat < "$dryccfile" | yq ".build.arg" -o json)
         if [[ $config != null ]]; then
-            mapfile -t items < <(echo "$config" | jq -c -r '.[] | (.name, .value)')
+            mapfile -t items < <(echo "$config" | jq -c -r 'to_entries[] | (.key, .value)')
             for ((i=0; i<"${#items[@]}"; i=i+2)); do
                 echo "${items[i]}=${items[i+1]}" >> "${envfile}"
             done
@@ -118,50 +135,38 @@ else
         --tls-verify=false > /dev/null
 fi
 
-envfile="${HOME}"/.config/build-env
-dryccfile="drycc.yaml"
-# create build-env
+# create global build-arg
+envfile="${HOME}"/.config/build-arg
 echo "" > "${envfile}"
-if [[ -f .build-env ]] ; then
-    cat .build-env >> "${envfile}"
+if [[ -f .build-arg ]] ; then
+    cat .build-arg >> "${envfile}"
 fi
 
 # Building
 if [[ "${DRYCC_STACK}" == "container" ]] ; then
-    echo "---> Building container"
-    builds=("web" "Dockerfile")
-    if [[ -e "$dryccfile" ]]; then
-        docker=$(cat < "$dryccfile" | yq .build.docker -o json)
-        if [[ $docker != null ]]; then
-            mapfile -t builds < <(echo "$docker" | jq -c -r 'to_entries[] | (.key, .value)')
-        else
-            write_build_env "$envfile" "$dryccfile"
-        fi
+    if [[ -d ".drycc" ]]; then
+        for dryccfile in $(find .drycc | grep -E '.(yml|yaml)$'); do
+            ptype=$(cat < "$dryccfile" | yq .ptype -o auto)
+            build=$(cat < "$dryccfile" | yq .build -o json)
+            if [[ "$build" != "null" ]]; then
+                dockerfile=$(echo "$build" | jq -r '.docker // "Dockerfile"')
+                if [[ "${ptype}" == "web" ]]; then
+                    image="${IMAGE_NAME}"
+                else
+                    image="${IMAGE_NAME}"-"${ptype}"
+                fi
+                # create ptype build-arg
+                ptype_envfile="${HOME}/.config/build-arg-${ptype}"
+                echo "" > "$ptype_envfile"
+                write_build_env "$ptype_envfile" "$dryccfile"
+                podman_publish "${image}" "${dockerfile}" "${ptype_envfile}"
+            fi
+        done
     fi
-    for ((i=0; i<"${#builds[@]}"; i=i+2)); do
-        procfile_type="${builds[i]}"
-        if [[ "${procfile_type}" == "web" ]]; then
-            image="${IMAGE_NAME}"
-        else
-            image="${IMAGE_NAME}"-"${procfile_type}"
-        fi
-        dockerfile="${builds[i+1]}"
-        podman_build="podman build . -f ${dockerfile} --tag ${image} --network host"
-        podman_push="podman push ${image} --tls-verify=false"
-        for build_arg in $( < "${envfile}" )
-        do
-            podman_build="$podman_build --build-arg $build_arg"
-        done
-        typed_envfile="${HOME}/.config/build-env-${procfile_type}"
-        echo "" > "$typed_envfile"
-        write_build_env "$typed_envfile" "$dryccfile" "$procfile_type"
-        for build_arg in $( < "${typed_envfile}" )
-        do
-            podman_build="$podman_build --build-arg $build_arg"
-        done
-        $podman_build
-        $podman_push
-    done
+    # build default image
+    if [[ -f "Dockerfile" ]] && [[ $(podman images -q "${IMAGE_NAME}") == "" ]]; then
+        podman_publish "${IMAGE_NAME}" "Dockerfile"
+    fi
 else
     echo "---> Building pack"
     echo "---> Using builder ${pack_builder}"
@@ -175,7 +180,6 @@ else
     image_base_name=$(echo "${IMAGE_NAME}" | sed -s "s#:${image_tag}##g")
     image_cache_name="${image_base_name}":cache
     image_latest_name="${image_base_name}":latest
-    write_build_env "$envfile" "$dryccfile"
     pack_build="pack build ${IMAGE_NAME} \
             --builder ${pack_builder} \
             --lifecycle-image ${pack_builder} \
