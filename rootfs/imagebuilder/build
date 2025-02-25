@@ -37,9 +37,9 @@ function waiting_process {
 }
 
 function podman_publish {
-    local image dryccfile
+    local image dockerfile
     image=$1
-    dryccfile=$2
+    dockerfile=$2
 
     podman_build="podman build . -f ${dockerfile} --tag ${image} --network host"
     podman_push="podman push ${image} --tls-verify=false"
