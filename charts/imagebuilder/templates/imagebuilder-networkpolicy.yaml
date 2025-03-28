@@ -41,7 +41,7 @@ spec:
           kubernetes.io/metadata.name: {{ .Release.Name }}
     - podSelector:
         matchLabels:
-          app: drycc-storage-metanode-weed
+          app: drycc-storage
     ports:
     - protocol: TCP
-      port: 8333
+      port: 9000
