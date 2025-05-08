@@ -9,4 +9,6 @@ mc config host add storage \
 
 GET_PATH=/tmp/app.tgz
 
+mc ping storage -x
+
 mc cp storage/"${DRYCC_STORAGE_BUCKET}/${TAR_PATH}" "${GET_PATH}"
