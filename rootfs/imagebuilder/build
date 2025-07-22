@@ -192,6 +192,9 @@ else
             --default-process web \
             --env-file ${envfile} \
             --network host"
+    # fix(pack): PACK_VOLUME_KEY is unset
+    PACK_VOLUME_KEY=${drycc_app}
+    export PACK_VOLUME_KEY
     if [[ $log_level == "debug" ]] ; then
         pack_build="$pack_build --verbose"
     fi
