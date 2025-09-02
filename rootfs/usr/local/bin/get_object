@@ -9,5 +9,9 @@ mc alias set storage \
 GET_PATH=/tmp/app.tgz
 
 mc ping storage -x
-
+if ! mc admin info storage > /dev/null 2>&1; then
+  sleep 9s
+else
+  mc ready storage
+fi
 mc cp storage/"${DRYCC_STORAGE_BUCKET}/${TAR_PATH}" "${GET_PATH}"
