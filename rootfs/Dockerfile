@@ -1,13 +1,13 @@
 ARG CODENAME
 FROM registry.drycc.cc/drycc/base:${CODENAME}
 
-ENV DRYCC_UID=1001 \
+ARG DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
   JQ_VERSION="1.7.1" \
   YQ_VERSION="4.47.2" \
   PODMAN_VERSION="5.6.1" \
-  MC_VERSION="2025.08.13.08.35.41" \
+  RCLONE_VERSION="1.71.1" \
   CADDY_VERSION="2.10.2" \
   PACK_VERSION="0.38.2" \
   GOSU_VERSION="1.18"
@@ -21,7 +21,7 @@ RUN install-packages procps psmisc \
   && install-stack jq $JQ_VERSION \
   && install-stack yq $YQ_VERSION \
   && install-stack podman $PODMAN_VERSION \
-  && install-stack mc $MC_VERSION \
+  && install-stack rclone $RCLONE_VERSION \
   && install-stack caddy $CADDY_VERSION \
   && install-stack pack $PACK_VERSION \
   && install-stack gosu $GOSU_VERSION \
