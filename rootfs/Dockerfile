@@ -5,12 +5,12 @@ ARG DRYCC_UID=1001 \
   DRYCC_GID=1001 \
   DRYCC_HOME_DIR=/home/drycc \
   JQ_VERSION="1.7.1" \
-  YQ_VERSION="4.47.2" \
-  PODMAN_VERSION="5.6.1" \
-  RCLONE_VERSION="1.71.1" \
+  YQ_VERSION="4.48.1" \
+  PODMAN_VERSION="5.7.0" \
+  RCLONE_VERSION="1.71.2" \
   CADDY_VERSION="2.10.2" \
   PACK_VERSION="0.38.2" \
-  GOSU_VERSION="1.18"
+  GOSU_VERSION="1.19"
 
 RUN groupadd drycc --gid ${DRYCC_GID} \
   && useradd drycc -u ${DRYCC_UID} -g ${DRYCC_GID} -s /bin/bash -m -d ${DRYCC_HOME_DIR}
