@@ -9,15 +9,14 @@ spec:
   policyTypes:
   - Egress
   egress:
-  - to:
-    ports:
+  # Allow DNS resolution (UDP and TCP on port 53)
+  - ports:
     - protocol: UDP
       port: 53
-  - to:
-    - ipBlock:
-        cidr: ::/0
-        except:
-        - fc00::/7
+    - protocol: TCP
+      port: 53
+
+  # Allow egress to public IPv4 networks, excluding private ranges (RFC1918)
   - to:
     - ipBlock:
         cidr: 0.0.0.0/0
@@ -25,21 +24,33 @@ spec:
         - 10.0.0.0/8
         - 172.16.0.0/12
         - 192.168.0.0/16
+
+  # Allow egress to public IPv6 networks, excluding ULA and link-local ranges
+  - to:
+    - ipBlock:
+        cidr: ::/0
+        except:
+        - fc00::/7         # Unique Local Address (cluster-internal range)
+        - fe80::/10        # Link-local address
+
+  # Allow access to drycc-registry within the same release namespace
   - to:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: {{ .Release.Name }}
-    - podSelector:
+      podSelector:
         matchLabels:
           app: drycc-registry
     ports:
     - protocol: TCP
       port: 5000
+
+  # Allow access to drycc-storage within the same release namespace
   - to:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: {{ .Release.Name }}
-    - podSelector:
+      podSelector:
         matchLabels:
           app: drycc-storage
     ports:
